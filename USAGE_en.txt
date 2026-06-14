@@ -1,0 +1,144 @@
+Kaitian (开天) v0.3 — Usage Guide
+===================================
+
+Overview
+────────
+Kaitian is an open-source Chinese-native agent framework that uses the
+Collatz conjecture as its core task scheduling algorithm, supporting
+Ruby → Python code migration and other cross-language transformation tasks.
+
+License: MIT
+
+Quick Start
+───────────
+
+1. Install Dependencies
+
+    Requires Python 3.10+ and tree-sitter.
+
+    pip install -r requirements.txt
+
+2. Run Code Migration Examples (Regex Engine v0.2)
+
+    cd code_migration
+    python ruby_to_python_rules.py
+
+    Converts 4 Ruby files from demo_examples/ in sequence:
+      - fibonacci.rb   → Fibonacci sequence
+      - file_reader.rb  → File I/O
+      - array_ops.rb    → Array operations
+      - todo_real.rb    → Real GitHub project (dt-az/todo-cli-ruby)
+
+    Output written to demo_output_v2/ directory.
+
+3. Run Collatz Scheduler Demo
+
+    cd collatz_scheduler
+    python demo_visualization.py
+
+    Generates collatz_convergence.png showing the task convergence path.
+
+4. Run Real Workload Test
+
+    cd collatz_scheduler
+    python real_workload_demo.py
+
+    Demonstrates how the Collatz protocol detects strategy failure.
+    When the regex engine cannot produce valid Python, complexity
+    correctly explodes (3N+1), forcing the scheduler to upgrade strategy.
+
+    ⚠️ Expected result: All 4 tasks explode due to syntax invalidity.
+    This IS correct protocol behavior. It proves the regex engine has
+    hit its ceiling and the AST engine is needed.
+
+5. Run Keyboard Scan Code Demo
+
+    cd keyboard_mapping
+    python scan_to_english.py
+
+    Simulates typing "hello world" via PS/2 Set 1 scan codes,
+    demonstrating scan code → English letter mapping.
+
+6. View Chinese Semantic Mapping
+
+    Open mapping_table/chinese_mapping.json
+
+    Contains 50 surface-level Chinese → Python mappings
+    (e.g. "如果" → "if"). The deep mapping pipeline
+    (scan codes → pinyin → abbreviation → semantic instructions)
+    is loaded via private modules, NOT included in this public repo.
+
+7. Open Interactive Documentation
+
+    Double-click index.html to open in a browser.
+
+    Features:
+      - 4 code conversion case studies (Ruby source vs Python output)
+      - Collatz convergence path visualization
+      - Complete keyboard scan code mapping table
+      - 50-entry Chinese semantic mapping display
+      - Kaitian vs Mythos5 capability comparison
+
+Directory Structure
+───────────────────
+
+kaitian/
+├── README.md / README_CN.md   Project overview (EN/CN)
+├── ARCHITECTURE.md             Four-layer architecture design
+├── QUICKSTART.md               Quick start guide
+├── .github/ISSUE_TEMPLATE.md   Issue template
+├── index.html                  Interactive showcase page
+├── requirements.txt            Python dependencies
+├── LICENSE                     MIT
+├── .gitignore
+│
+├── code_migration/             Code migration engine
+│   ├── ruby_to_python_rules.py     Regex engine v0.2 (usable, gaps exist)
+│   ├── ast_migration.py            AST engine v0.3 (tree-sitter traversal)
+│   ├── demo_examples/              4 Ruby test cases
+│   └── demo_output_v2/             Converted Python output
+│
+├── collatz_scheduler/          Collatz convergence scheduler
+│   ├── scheduler.py                Core scheduler
+│   ├── demo_visualization.py       Convergence path visualization
+│   └── real_workload_demo.py       Real workload test
+│
+├── keyboard_mapping/           Keyboard mapping
+│   └── scan_to_english.py          PS/2 scan codes → letters
+│
+└── mapping_table/              Semantic mapping
+    └── chinese_mapping.json        50 Chinese → Python mappings
+
+Known Limitations (Alpha)
+─────────────────────────
+
+1. Regex Engine v0.2: The following Ruby structures are not yet converted
+   - begin/rescue/ensure exception handling
+   - case/when branching
+   - each_with_index iterator
+   - OptionParser argument parsing
+   - Block multi-variable (yield)
+   - require/autoload module loading
+
+2. AST Engine v0.3: Architecture correct, implementation has known bugs
+   - Operator mapping (&&→and, ||→or) occasionally dropped
+   - Method call formatting (foo.bar()) occasionally incorrect
+   - Parameter default value mapping incomplete
+
+3. No end-to-end migration success case
+   There is no verified "input Ruby project → output runnable Python
+   project" pipeline yet.
+
+4. Collatz scheduler only drives rule engines
+   Not yet connected to real LLMs. Currently functions as a
+   "strategy valid/invalid" binary classifier.
+
+5. Game / Drug Design / Genomics modules
+   Declared in architecture but zero implementation — placeholder modules only.
+
+Feedback & Contributing
+───────────────────────
+
+Issues and Pull Requests welcome. See .github/ISSUE_TEMPLATE.md.
+
+This project is MIT licensed.

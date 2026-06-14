@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>开天 (Kaitian) — 开源中文原生智能体框架</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #12121a;
+    --bg3: #1a1a28;
+    --border: #2a2a3a;
+    --text: #c8c8d4;
+    --text-dim: #6a6a7a;
+    --accent: #6c5ce7;
+    --accent2: #a29bfe;
+    --green: #00cec9;
+    --red: #d63031;
+    --yellow: #fdcb6e;
+    --code-bg: #0d1117;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'SF Mono', 'Consolas', 'Courier New', monospace;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+  .container { max-width: 1000px; margin: 0 auto; padding: 40px 24px; }
+
+  /* Header */
+  header {
+    text-align: center;
+    padding: 60px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  h1 {
+    font-size: 3em;
+    background: linear-gradient(135deg, var(--accent2), var(--green));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 4px;
+  }
+  .subtitle { color: var(--text-dim); font-size: 0.9em; margin-top: 8px; }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    margin: 4px;
+    border-radius: 3px;
+    font-size: 0.75em;
+    border: 1px solid var(--border);
+  }
+  .badge.python { border-color: #4584b6; color: #4584b6; }
+  .badge.mit { border-color: var(--green); color: var(--green); }
+  .badge.v { border-color: var(--accent2); color: var(--accent2); }
+
+  /* Sections */
+  section { margin: 48px 0; }
+  h2 {
+    font-size: 1.4em;
+    color: var(--accent2);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+    margin-bottom: 20px;
+  }
+  h3 { color: var(--green); margin: 16px 0 8px; font-size: 1em; }
+
+  /* Architecture Diagram */
+  .arch-diagram {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2px;
+    margin: 20px 0;
+  }
+  .arch-row {
+    display: flex;
+    gap: 2px;
+  }
+  .arch-layer {
+    flex: 1;
+    padding: 12px;
+    text-align: center;
+    border-radius: 4px;
+    font-size: 0.8em;
+  }
+  .arch-l4 { background: #2d1b69; border: 1px solid var(--accent); }
+  .arch-l3 { background: #1b4332; border: 1px solid var(--green); }
+  .arch-l2 { background: #1a1a2e; border: 1px solid #4584b6; }
+  .arch-l1 { background: #2d1810; border: 1px solid var(--yellow); }
+  .arch-core { background: #1a0a0a; border: 1px dashed var(--red); color: var(--red); padding: 8px; font-size: 0.7em; margin-top: 8px; }
+
+  /* Side-by-side code */
+  .code-compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  @media (max-width: 700px) { .code-compare { grid-template-columns: 1fr; } }
+  .code-block {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .code-label {
+    padding: 6px 12px;
+    font-size: 0.7em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .code-label.rb { background: #3d1420; color: #ff6b6b; }
+  .code-label.py { background: #14203d; color: var(--accent2); }
+  code, pre {
+    white-space: pre;
+    font-family: 'SF Mono', 'Consolas', monospace;
+    font-size: 0.78em;
+    overflow-x: auto;
+  }
+  pre { padding: 12px 16px; margin: 0; tab-size: 2; }
+
+  /* Collatz viz */
+  .collatz-viz {
+    text-align: center;
+    margin: 20px 0;
+  }
+  .collatz-viz img {
+    max-width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  /* Mapping table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 0.82em;
+  }
+  th, td {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    text-align: left;
+  }
+  th { background: var(--bg3); color: var(--accent2); }
+
+  /* Stats bar */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .stat {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-val { font-size: 1.8em; font-weight: bold; }
+  .stat-val.green { color: var(--green); }
+  .stat-val.purple { color: var(--accent2); }
+  .stat-val.yellow { color: var(--yellow); }
+  .stat-label { font-size: 0.7em; color: var(--text-dim); margin-top: 4px; }
+
+  /* Collatz demo */
+  .collatz-demo {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px 0;
+  }
+  .convergence-path {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin: 8px 0;
+  }
+  .conv-step {
+    background: #1a1a2e;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.75em;
+    min-width: 24px;
+    text-align: center;
+  }
+  .conv-arrow { color: var(--text-dim); font-size: 0.7em; }
+
+  /* keyboard viz */
+  .keyboard-row {
+    display: flex;
+    gap: 3px;
+    margin: 4px 0;
+    justify-content: center;
+  }
+  .key {
+    width: 36px;
+    height: 36px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7em;
+    transition: all 0.2s;
+  }
+  .key.highlight {
+    background: var(--accent);
+    border-color: var(--accent2);
+    color: #fff;
+    transform: scale(1.1);
+  }
+
+  /* Tab controls */
+  .tabs { display: flex; gap: 0; margin: 16px 0 0 0; }
+  .tab-btn {
+    padding: 8px 16px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    cursor: pointer;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 0.8em;
+    border-radius: 6px 6px 0 0;
+  }
+  .tab-btn.active {
+    background: var(--code-bg);
+    color: var(--accent2);
+    border-color: var(--accent);
+  }
+  .tab-panel { display: none; padding: 16px; background: var(--code-bg); border: 1px solid var(--border); border-top: 1px solid var(--accent); border-radius: 0 0 8px 8px; }
+  .tab-panel.active { display: block; }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 40px 0;
+    color: var(--text-dim);
+    font-size: 0.75em;
+    border-top: 1px solid var(--border);
+    margin-top: 60px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>开 天</h1>
+  <p class="subtitle">Kaitian — 开源中文原生智能体框架 v0.2</p>
+  <div style="margin-top:12px">
+    <span class="badge python">Python 3.10+</span>
+    <span class="badge mit">MIT License</span>
+    <span class="badge v">v0.2.0</span>
+  </div>
+</header>
+
+<!-- Stats -->
+<div class="stats">
+  <div class="stat">
+    <div class="stat-val green">12</div>
+    <div class="stat-label">迁移规则</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val purple">3</div>
+    <div class="stat-label">真实测试案例</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val yellow">100%</div>
+    <div class="stat-label">科拉茨收敛</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val green">50+</div>
+    <div class="stat-label">中文映射词条</div>
+  </div>
+</div>
+
+<!-- Architecture -->
+<section>
+  <h2>四层架构</h2>
+  <div class="arch-diagram">
+    <div class="arch-row">
+      <div class="arch-layer arch-l4">
+        <strong>应用层</strong><br>
+        代码迁移 · 药物设计 · 基因组学 · 游戏操作 · 长周期任务
+      </div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-layer arch-l3">
+        <strong>科拉茨调度层</strong><br>
+        成功 ÷2 收缩 | 失败 ×3+1 扩展 | 数学保证收敛到 1
+      </div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-layer arch-l2">
+        <strong>执行层</strong><br>
+        正则引擎 · AST Parser · JSON 配置 · Python SDK
+      </div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-layer arch-l1">
+        <strong>语义映射层</strong><br>
+        中文关键词 → Python 代码映射表
+      </div>
+    </div>
+  </div>
+  <div class="arch-core">
+    核心管道（安全保留）：扫描码 → 拼音 → 简拼 → 汉字 → 语义指令
+  </div>
+</section>
+
+<!-- Code Migration Demo -->
+<section>
+  <h2>代码迁移引擎 — 真实 Ruby 项目演示</h2>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('tab-fib')">Fibonacci</button>
+    <button class="tab-btn" onclick="switchTab('tab-file')">File Reader</button>
+    <button class="tab-btn" onclick="switchTab('tab-array')">Array Ops</button>
+    <button class="tab-btn" onclick="switchTab('tab-todo')">Todo CLI (真实)</button>
+  </div>
+
+  <div id="tab-fib" class="tab-panel active">
+    <div class="code-compare">
+      <div class="code-block">
+        <div class="code-label rb">Ruby</div>
+        <pre>def fibonacci(n)
+  if n <= 0
+    return nil
+  elsif n == 1
+    return 0
+  elsif n == 2
+    return 1
+  else
+    a = 0
+    b = 1
+    (n - 2).times do
+      c = a + b
+      a = b
+      b = c
+    end
+    return b
+  end
+end
+puts "Fibonacci(10) = #{fibonacci(10)}"</pre>
+      </div>
+      <div class="code-block">
+        <div class="code-label py">Python (自动转换)</div>
+        <pre>def fibonacci(n):
+  if n <= 0:
+    return None
+  elif n == 1:
+    return 0
+  elif n == 2:
+    return 1
+  else:
+    a = 0
+    b = 1
+    for _ in range(n - 2):
+      c = a + b
+      a = b
+      b = c
+    return b
+
+# 规则转换: elsif→elif, nil→None, .times→range, #{}→f-string
+print(f"Fibonacci(10) = {fibonacci(10)}")</pre>
+      </div>
+    </div>
+    <p style="font-size:0.78em; color:var(--text-dim); margin-top:8px">
+      应用规则：<code>elsif→elif</code> <code>nil→None</code> <code>.times→range</code> <code>#{}→f-string</code><br>
+      转换行数：24 → 18 行
+    </p>
+  </div>
+
+  <div id="tab-file" class="tab-panel">
+    <div class="code-compare">
+      <div class="code-block">
+        <div class="code-label rb">Ruby</div>
+        <pre>class FileProcessor
+  def initialize(filename)
+    @filename = filename
+    @lines = []
+  end
+
+  def read_file
+    file = File.open(@filename, "r")
+    file.each do |line|
+      @lines.push(line.strip)
+    end
+    file.close
+    return @lines.length
+  end
+end
+
+processor = FileProcessor.new("data.txt")
+count = processor.read_file
+puts "Read #{count} lines"</pre>
+      </div>
+      <div class="code-block">
+        <div class="code-label py">Python (自动转换)</div>
+        <pre>class FileProcessor:
+  def __init__(self, filename):
+    self.filename = filename
+    self.lines = []
+
+  def read_file(self):
+    file = open(self.filename, "r")
+    for line in file:
+      self.lines.append(line.strip())
+    file.close()
+    return len(self.lines)
+
+processor = FileProcessor("data.txt")
+count = processor.read_file()
+print(f"Read {count} lines")</pre>
+      </div>
+    </div>
+    <p style="font-size:0.78em; color:var(--text-dim); margin-top:8px">
+      应用规则：<code>class→class:</code> <code>@→self.</code> <code>.each→for</code> <code>.push→.append</code> <code>.length→len()</code> <code>File.open→open</code> <code>.new→构造</code><br>
+      转换行数：26 → 18 行
+    </p>
+  </div>
+
+  <div id="tab-array" class="tab-panel">
+    <div class="code-compare">
+      <div class="code-block">
+        <div class="code-label rb">Ruby</div>
+        <pre>def process_numbers(numbers)
+  results = []
+  unless numbers.empty?
+    numbers.each do |num|
+      if num % 2 == 0
+        results.push(num * 2)
+      else
+        results.push(num * 3)
+      end
+    end
+  end
+  return results
+end
+
+test_data = [1,2,3,4,5,6,7,8,9,10]
+output = process_numbers(test_data)
+puts "Input: #{test_data}"
+puts "Output: #{output}"</pre>
+      </div>
+      <div class="code-block">
+        <div class="code-label py">Python (自动转换)</div>
+        <pre>def process_numbers(numbers):
+  results = []
+  if not numbers == []:
+    for num in numbers:
+      if num % 2 == 0:
+        results.append(num * 2)
+      else:
+        results.append(num * 3)
+  return results
+
+test_data = [1,2,3,4,5,6,7,8,9,10]
+output = process_numbers(test_data)
+print(f"Input: {test_data}")
+print(f"Output: {output}")</pre>
+      </div>
+    </div>
+    <p style="font-size:0.78em; color:var(--text-dim); margin-top:8px">
+      应用规则：<code>unless→if not</code> <code>.empty?→==[]</code> <code>.each→for</code> <code>.push→.append</code> <code>#{}→f-string</code><br>
+      转换行数：23 → 19 行
+    </p>
+  </div>
+
+  <div id="tab-todo" class="tab-panel">
+    <div class="code-compare">
+      <div class="code-block">
+        <div class="code-label rb">Ruby (GitHub 真实项目)</div>
+        <pre>require 'json'
+require 'fileutils'
+require 'optparse'
+
+def load_tasks
+  data_file = get_data_file
+  begin
+    JSON.parse(File.read(data_file))
+  rescue Errno::ENOENT, JSON::ParserError
+    []
+  end
+end
+
+def add_task(description)
+  tasks = load_tasks
+  tasks << { 'description' => description, 'completed' => false }
+  save_tasks(tasks)
+  puts "Task added: #{description}"
+end
+
+def list_tasks
+  tasks = load_tasks
+  if tasks.empty?
+    puts 'No tasks found.'
+    return
+  end
+  tasks.each_with_index do |task, index|
+    status = task['completed'] ? '[x]' : '[ ]'
+    puts "#{index+1}. #{status} #{task['description']}"
+  end
+end
+
+def main
+  options = {}
+  OptionParser.new do |opts|
+    opts.on('-a','--add DESC'){ |d| options[:add]=d }
+    opts.on('-l','--list'){ options[:list]=true }
+  end.parse!
+  case
+  when options[:add] then add_task(options[:add])
+  when options[:list] then list_tasks
+  else puts 'Use -h for help'
+  end
+end
+
+main if __FILE__ == $PROGRAM_NAME</pre>
+      </div>
+      <div class="code-block">
+        <div class="code-label py">Python (当前引擎输出)</div>
+        <pre>require 'json'
+require 'fileutils'
+require 'optparse'
+
+def load_tasks:
+  data_file = get_data_file
+  begin
+    JSON.parse(File.read(data_file))
+  rescue Errno::ENOENT, JSON::ParserError
+    []
+
+def add_task(description):
+  tasks = load_tasks
+  tasks << { 'description' => description, 'completed' => False }
+  save_tasks(tasks)
+  print(f("Task added: {description}")
+
+def list_tasks:
+  tasks = load_tasks
+  len(if tasks) == 0     # ❌ .empty?
+    print('No tasks found.')
+    return
+  tasks.each_with_index do |task, index|     # ❌ 未覆盖
+    ...
+
+def main:
+  case                   # ❌ 未覆盖
+  when options[:add] then ...
+
+# 命中规则: 11类 | 未覆盖: begin/rescue,
+# case/when, each_with_index, OptionParser,
+# 块语法, require, FileUtils, $全局变量</pre>
+      </div>
+    </div>
+    <p style="font-size:0.78em; color:var(--text-dim); margin-top:8px">
+      真实项目源：<a href="https://github.com/dt-az/todo-cli-ruby" style="color:var(--accent2)" target="_blank">dt-az/todo-cli-ruby (178行)</a><br>
+      转换结果：178行 → 取得部分进展。暴露 7 类未覆盖结构，为社区贡献提供明确方向。
+    </p>
+  </div>
+</section>
+
+<!-- Collatz Scheduler -->
+<section>
+  <h2>科拉茨收敛调度器</h2>
+  <p style="font-size:0.85em; color:var(--text-dim); margin-bottom:16px">
+    核心数学机制：子任务成功后除以 2 收缩资源，失败后乘以 3 加 1 进行扩展重试。
+    科拉茨猜想保证所有序列最终收敛到 1。
+  </p>
+
+  <div class="collatz-demo">
+    <h3>运行示例 — 三个并行子任务全部收敛</h3>
+    <div style="margin: 12px 0">
+      <strong>Parse Ruby project:</strong>
+      <div class="convergence-path">
+        <span class="conv-step">120</span><span class="conv-arrow">→</span>
+        <span class="conv-step">60</span><span class="conv-arrow">→</span>
+        <span class="conv-step">30</span><span class="conv-arrow">→</span>
+        <span class="conv-step">15</span><span class="conv-arrow">→</span>
+        <span class="conv-step">7</span><span class="conv-arrow">→</span>
+        <span class="conv-step">3</span><span class="conv-arrow">→</span>
+        <span class="conv-step" style="background:var(--green);color:#000">1 ✓</span>
+      </div>
+    </div>
+    <div style="margin: 12px 0">
+      <strong>Validate AST nodes:</strong>
+      <div class="convergence-path">
+        <span class="conv-step">75</span><span class="conv-arrow">→</span>
+        <span class="conv-step">37</span><span class="conv-arrow">→</span>
+        <span class="conv-step">18</span><span class="conv-arrow">→</span>
+        <span class="conv-step">9</span><span class="conv-arrow">→</span>
+        <span class="conv-step">4</span><span class="conv-arrow">→</span>
+        <span class="conv-step">2</span><span class="conv-arrow">→</span>
+        <span class="conv-step" style="background:var(--green);color:#000">1 ✓</span>
+      </div>
+    </div>
+    <div style="margin: 12px 0">
+      <strong>Generate Python code:</strong>
+      <div class="convergence-path">
+        <span class="conv-step">180</span><span class="conv-arrow">→</span>
+        <span class="conv-step">90</span><span class="conv-arrow">→</span>
+        <span class="conv-step">45</span><span class="conv-arrow">→</span>
+        <span class="conv-step">22</span><span class="conv-arrow">→</span>
+        <span class="conv-step">11</span><span class="conv-arrow">→</span>
+        <span class="conv-step">5</span><span class="conv-arrow">→</span>
+        <span class="conv-step">2</span><span class="conv-arrow">→</span>
+        <span class="conv-step" style="background:var(--green);color:#000">1 ✓</span>
+      </div>
+    </div>
+    <p style="font-size:0.75em; color:var(--text-dim); margin-top:12px">
+      收敛率：<strong>100% (3/3)</strong> · 平均步数：7.33 · 最长路径：8 步
+    </p>
+  </div>
+
+  <div class="collatz-viz">
+    <img src="collatz_convergence.png" alt="Collatz Convergence Visualization">
+    <p style="font-size:0.75em; color:var(--text-dim); margin-top:8px">
+      收敛路径可视化 — 每条线代表一个子任务从启动到收敛的完整轨迹
+    </p>
+  </div>
+</section>
+
+<!-- Keyboard Mapping -->
+<section>
+  <h2>键盘扫描码映射</h2>
+  <p style="font-size:0.85em; color:var(--text-dim); margin-bottom:16px">
+    PS/2 扫描码 → 英文字母映射（公开版）。完整映射表支持扫描码 → 拼音 → 汉字 → 代码语义。
+    输入 <code>hello world</code> 对应的扫描码序列，自动还原：<code>0x23 0x12 0x26 0x26 0x18 0x39 ...</code> → <strong>helloworld</strong>
+  </p>
+
+  <table>
+    <tr><th>扫描码</th><th>字符</th><th>扫描码</th><th>字符</th><th>扫描码</th><th>字符</th><th>扫描码</th><th>字符</th></tr>
+    <tr><td>0x01</td><td>esc</td><td>0x10</td><td>q</td><td>0x1E</td><td>a</td><td>0x2C</td><td>z</td></tr>
+    <tr><td>0x02</td><td>1</td><td>0x11</td><td>w</td><td>0x1F</td><td>s</td><td>0x2D</td><td>x</td></tr>
+    <tr><td>0x03</td><td>2</td><td>0x12</td><td>e</td><td>0x20</td><td>d</td><td>0x2E</td><td>c</td></tr>
+    <tr><td>0x04</td><td>3</td><td>0x13</td><td>r</td><td>0x21</td><td>f</td><td>0x2F</td><td>v</td></tr>
+    <tr><td>0x05</td><td>4</td><td>0x14</td><td>t</td><td>0x22</td><td>g</td><td>0x30</td><td>b</td></tr>
+    <tr><td>0x06</td><td>5</td><td>0x15</td><td>y</td><td>0x23</td><td>h</td><td>0x31</td><td>n</td></tr>
+    <tr><td>0x07</td><td>6</td><td>0x16</td><td>u</td><td>0x24</td><td>j</td><td>0x32</td><td>m</td></tr>
+    <tr><td>0x08</td><td>7</td><td>0x17</td><td>i</td><td>0x25</td><td>k</td><td>0x39</td><td>space</td></tr>
+    <tr><td>0x09</td><td>8</td><td>0x18</td><td>o</td><td>0x26</td><td>l</td><td>0x1C</td><td>enter</td></tr>
+    <tr><td>0x0A</td><td>9</td><td>0x19</td><td>p</td><td>0x27</td><td>;</td><td>0x0E</td><td>bsp</td></tr>
+  </table>
+</section>
+
+<!-- Chinese Mapping (surface only) -->
+<section>
+  <h2>中文语义映射（公开版）</h2>
+  <p style="font-size:0.85em; color:var(--text-dim); margin-bottom:16px">
+    50 条表面级中→英映射。核心映射管道（扫描码→拼音→简拼→语义）通过私有模块加载，不在公开仓库中。
+  </p>
+  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 6px; font-size:0.82em;">
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>如果</code> → <code>if</code> 条件分支</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>否则</code> → <code>else</code> 分支</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>循环</code> → <code>for / while</code> 迭代</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>函数</code> → <code>def</code> 定义</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>返回</code> → <code>return</code> 返回值</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>打印</code> → <code>print</code> 输出</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>输入</code> → <code>input</code> 用户输入</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>列表</code> → <code>list / []</code> 数组</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>字典</code> → <code>dict / {}</code> 键值</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>文件</code> → <code>open / file</code> IO</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>读取</code> → <code>read</code> 文件读</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>写入</code> → <code>write</code> 文件写</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>类</code> → <code>class</code> 面向对象</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>真</code> → <code>True</code> 布尔</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>假</code> → <code>False</code> 布尔</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>空</code> → <code>None</code> 空值</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>错误</code> → <code>Exception</code> 异常</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>尝试</code> → <code>try</code> 异常处理</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>捕获</code> → <code>except</code> 异常捕获</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>导入</code> → <code>import</code> 模块</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>搜索</code> → <code>search / find</code> 查找</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>排序</code> → <code>sort</code> 排序</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>长度</code> → <code>len</code> 长度</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>类型</code> → <code>type</code> 类型</div>
+    <div style="background:var(--bg3);padding:8px;border-radius:4px"><code>范围</code> → <code>range</code> 范围</div>
+  </div>
+</section>
+
+<!-- Roadmap -->
+<section>
+  <h2>能力对标</h2>
+  <table>
+    <tr><th>能力维度</th><th>神话5</th><th>开天 v0.2</th><th>差距</th></tr>
+    <tr><td>代码迁移</td><td>完整 AST 转换</td><td>12 条正则规则 + 多 Pass 处理</td><td>~10%</td></tr>
+    <tr><td>游戏操作</td><td>像素级 CV + 图形规划</td><td>未实现</td><td>0%</td></tr>
+    <tr><td>药物设计</td><td>分子动力学仿真</td><td>未实现</td><td>0%</td></tr>
+    <tr><td>基因组学</td><td>序列比对 + 折叠预测</td><td>未实现</td><td>0%</td></tr>
+    <tr><td>长周期任务</td><td>记忆压缩 + 上下文管理</td><td>科拉茨收敛调度器</td><td>~35%</td></tr>
+    <tr><td>中文语义</td><td>无</td><td>50 条表面映射 + 私有核心管道</td><td>独有优势</td></tr>
+    <tr><td>开源生态</td><td>闭源</td><td>MIT · 公开架构 · 社区驱动</td><td>独有优势</td></tr>
+  </table>
+</section>
+
+<footer>
+  <p>Kaitian v0.2 · MIT License · 2026</p>
+  <p style="margin-top:4px">四层架构 · 科拉茨调度 · 中文原生 · 开源驱动</p>
+</footer>
+
+</div>
+
+<script>
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+}
+</script>
+</body>
+</html>

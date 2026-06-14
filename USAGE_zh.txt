@@ -1,0 +1,135 @@
+开天 (Kaitian) v0.3 — 使用指南
+==================================
+
+项目简介
+────────
+开天是一个开源的中文原生智能体框架，用科拉茨数学猜想驱动任务调度，
+支持 Ruby → Python 代码迁移等跨语言转换任务。许可证：MIT。
+
+快速开始
+────────
+
+1. 安装依赖
+
+    本项目需要 Python 3.10+ 和 tree-sitter 库。
+
+    pip install -r requirements.txt
+
+2. 运行代码迁移示例（正则引擎 v0.2）
+
+    cd code_migration
+    python ruby_to_python_rules.py
+
+    这会依次转换 demo_examples/ 下的 4 个 Ruby 文件：
+      - fibonacci.rb   → 斐波那契数列
+      - file_reader.rb  → 文件读取
+      - array_ops.rb    → 数组操作
+      - todo_real.rb    → 来自真实 GitHub 项目的 todo-cli（dt-az/todo-cli-ruby）
+
+    转换结果输出到 demo_output_v2/ 目录。
+
+3. 运行科拉茨调度器演示
+
+    cd collatz_scheduler
+    python demo_visualization.py
+
+    生成 collatz_convergence.png 收敛路径图，展示任务调度过程。
+
+4. 运行科拉茨真实负载测试
+
+    cd collatz_scheduler
+    python real_workload_demo.py
+
+    展示科拉茨协议如何检测策略失效——当正则引擎无法产出合法 Python 时，
+    复杂度正确爆炸（3N+1），迫使调度器升级策略。
+
+    ⚠️ 预期结果：4 项任务全部因语法无效而爆炸，这是协议的正确行为。
+    证明正则引擎已达极限，需要升级到 AST 引擎。
+
+5. 运行键盘映射演示
+
+    cd keyboard_mapping
+    python scan_to_english.py
+
+    模拟键盘输入"hello world"，展示 PS/2 扫描码 → 英文字母映射过程。
+
+6. 查看中文语义映射
+
+    打开 mapping_table/chinese_mapping.json
+
+    包含 50 条中文 → Python 表面映射（例如："如果" → "if"）。
+    深层映射管道（扫描码 → 拼音 → 简拼 → 语义指令）
+    通过私有模块加载，不在本公开仓库中。
+
+7. 打开交互式文档
+
+    双击 index.html 在浏览器中打开。
+
+    功能：
+      - 4 个代码转换案例对比（Ruby 源码 vs Python 输出）
+      - 科拉茨收敛路径可视化
+      - 完整键盘扫描码映射表
+      - 50 条中文映射展示
+      - 开天 vs 神话5 能力对标
+
+目录结构
+────────
+
+开天/
+├── README.md / README_CN.md   项目说明（英/中）
+├── ARCHITECTURE.md             四层架构详细设计
+├── QUICKSTART.md               快速开始
+├── .github/ISSUE_TEMPLATE.md   Issue 模板
+├── index.html                  交互式展示页
+├── requirements.txt            Python 依赖
+├── LICENSE                     MIT
+├── .gitignore
+│
+├── code_migration/             代码迁移引擎
+│   ├── ruby_to_python_rules.py     正则引擎 v0.2（可用但有语法覆盖缺口）
+│   ├── ast_migration.py            AST 引擎 v0.3（tree-sitter 树遍历）
+│   ├── demo_examples/              4 个 Ruby 测试案例
+│   └── demo_output_v2/             转换后的 Python 输出
+│
+├── collatz_scheduler/          科拉茨收敛调度器
+│   ├── scheduler.py                核心调度器
+│   ├── demo_visualization.py       收敛路径可视化
+│   └── real_workload_demo.py       真实负载测试
+│
+├── keyboard_mapping/           键盘映射
+│   └── scan_to_english.py          PS/2 扫描码 → 字母
+│
+└── mapping_table/              语义映射
+    └── chinese_mapping.json        50 条中文 → Python 映射
+
+已知限制 (Alpha)
+────────────────
+
+1. 正则引擎 v0.2：以下 Ruby 结构尚未转换
+   - begin/rescue/ensure 异常处理
+   - case/when 分支
+   - each_with_index 迭代器
+   - OptionParser 参数解析
+   - 块内多变量（yield）
+   - require/autoload 模块加载
+
+2. AST 引擎 v0.3：架构正确但细节有 bug
+   - 操作符映射（&&→and, ||→or）偶有丢失
+   - 方法调用格式（foo.bar()）偶有错误
+   - 参数默认值映射未完成
+
+3. 代码迁移无端到端成功案例
+   尚未有完整的「输入 Ruby 项目 → 输出可运行 Python 项目」流程。
+
+4. 科拉茨调度器仅驱动规则引擎
+   尚未接入真实 LLM。目前仅作为「策略有效/无效」判定器使用。
+
+5. 游戏/药物/基因组学模块
+   架构声明但零实现，仅为预留模块目录。
+
+反馈与贡献
+──────────
+
+欢迎提交 Issue 和 Pull Request。详见 .github/ISSUE_TEMPLATE.md。
+
+本项目遵循 MIT 许可证。
