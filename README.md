@@ -137,6 +137,14 @@ This is an **alpha** release. The following limitations are acknowledged:
 
 ---
 
+## Connect
+
+- **GitHub Issues**: Bug reports, feature requests, ideas
+- **Email**: [kaitian2026@proton.me](mailto:kaitian2026@proton.me)
+- **Sponsor**: If this project interests you, consider [sponsoring on GitHub](https://github.com/sponsors/kaitian2026) to support development.
+
+---
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

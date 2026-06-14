@@ -143,6 +143,14 @@ python keyboard_mapping/scan_to_english.py
 
 ---
 
+## 联系
+
+- **GitHub Issues**：提交 Bug、需求、想法
+- **邮箱**：[kaitian2026@proton.me](mailto:kaitian2026@proton.me)
+- **赞助**：如果这个项目对你有价值，欢迎在 [GitHub 赞助](https://github.com/sponsors/kaitian2026) 支持开发。
+
+---
+
 ## 许可证
 
 MIT。详见 [LICENSE](LICENSE)。
