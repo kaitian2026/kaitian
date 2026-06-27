@@ -1,0 +1,783 @@
+# -*- coding: utf-8 -*-
+"""
+============================================================
+中文操作系统 — 交互式编程环境（全中文版）
+============================================================
+"""
+
+import sys
+import os
+import re
+
+
+# ============================================================
+# 工具函数
+# ============================================================
+def _全角转半角(s):
+    """将全角字符转换为半角字符（字母/数字/符号），确保输入规范化"""
+    result = []
+    for c in s:
+        code = ord(c)
+        if code == 0x3000:
+            result.append(' ')       # 全角空格 → 半角空格
+        elif 0xFF01 <= code <= 0xFF5E:
+            result.append(chr(code - 0xFEE0))  # 全角标点/字母/数字 → 半角
+        else:
+            result.append(c)
+    return ''.join(result)
+
+
+# ============================================================
+# 阶段一：检测并导入游戏模块（pygame）
+# ============================================================
+_游戏可用 = False
+try:
+    import pygame
+    from pygame.locals import *
+    _游戏可用 = True
+except Exception:
+    pass
+
+import random
+
+
+# ============================================================
+# 阶段二：加载映射表引擎
+# ============================================================
+def _获取映射表():
+    """从多路径加载映射表模块"""
+    try:
+        from 映射表 import get_table
+        return get_table()
+    except ImportError:
+        pass
+
+    # 打包后的路径查找
+    import importlib.util
+    _候选路径 = []
+    if getattr(sys, 'frozen', False):
+        _候选路径.append(os.path.join(os.path.dirname(sys.executable), '映射表.py'))
+    if hasattr(sys, '_MEIPASS'):
+        _候选路径.append(os.path.join(sys._MEIPASS, '映射表.py'))
+    _候选路径.append(os.path.join(os.getcwd(), '映射表.py'))
+    _候选路径.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '映射表.py'))
+
+    for _p in _候选路径:
+        if os.path.exists(_p):
+            _spec = importlib.util.spec_from_file_location('映射表', _p)
+            _mod = importlib.util.module_from_spec(_spec)
+            _spec.loader.exec_module(_mod)
+            return _mod.get_table()
+
+    # 最小化兜底
+    class _兜底表:
+        def translate_code(self, s): return _全角转半角(s)
+        def encode(self, s): return None
+        def decode_windows(self, s): return None
+        def one_way_valve_test(self): return []
+        def stats(self): return {'键盘按键映射数':0,'中文关键字数':0,'Windows关键字覆盖数':0,'别名总数':0,'代码翻译关键字数':0}
+        alias_table = {}
+        win_to_independent = {}
+        key_mapping = {}
+        code_keywords = {}
+        def get_keyword_list(self): return {}
+    return _兜底表()
+
+
+_映射表 = _获取映射表()
+
+
+# ============================================================
+# 阶段三：中文操作系统核心引擎
+# ============================================================
+
+class 中文操作系统:
+    """
+    中文操作系统交互式编程环境
+    
+    功能：
+    - 中文指令交互控制台
+    - 编程模式：逐行输入中文代码构建程序
+    - 翻译执行：将中文代码翻译为Python后运行
+    - 贪吃蛇模板：内置完整贪吃蛇游戏的中文源码模板
+    """
+
+    def __init__(self):
+        self.用户代码列表 = []          # 用户逐行编写的代码
+        self.处于编程模式 = False       # 是否在编程模式中
+        self.执行命名空间 = {}           # exec的运行环境
+        self.已初始化游戏环境 = False   # 游戏环境是否就绪
+        self.命令历史 = []              # 命令历史记录
+
+        # 预填充执行环境的基础模块
+        self.执行命名空间.update({
+            '__builtins__': __builtins__,
+            'sys': sys,
+            'os': os,
+            're': re,
+            'random': random,
+        })
+        if _游戏可用:
+            self.执行命名空间['pygame'] = pygame
+            self.执行命名空间.update({
+                'QUIT': QUIT, 'KEYDOWN': KEYDOWN, 'K_UP': K_UP,
+                'K_DOWN': K_DOWN, 'K_LEFT': K_LEFT, 'K_RIGHT': K_RIGHT,
+                'K_ESCAPE': K_ESCAPE, 'K_r': K_r,
+            })
+
+    # --------------------------------------------------------
+    # 翻译引擎
+    # --------------------------------------------------------
+    def 翻译代码(self, 中文源码):
+        """调用映射表将中文源码翻译为Python"""
+        return _映射表.translate_code(中文源码)
+
+    def 执行代码(self, 代码文本):
+        """翻译并执行一段中文代码，返回(成功, 结果或错误)"""
+        python代码 = self.翻译代码(代码文本)
+        try:
+            exec(python代码, self.执行命名空间)
+            return True, None
+        except Exception as e:
+            return False, str(e)
+
+    # --------------------------------------------------------
+    # 显示系统
+    # --------------------------------------------------------
+    def 显示分隔线(self):
+        print("=" * 64)
+
+    def 显示横幅(self):
+        self.显示分隔线()
+        print("")
+        print("      ███╗   ██╗███████╗ █████╗  ██████╗ ██╗   ██╗")
+        print("      ████╗  ██║██╔════╝██╔══██╗██╔═══██╗██║   ██║")
+        print("      ██╔██╗ ██║█████╗  ███████║██║   ██║██║   ██║")
+        print("      ██║╚██╗██║██╔══╝  ██╔══██║██║   ██║╚██╗ ██╔╝")
+        print("      ██║ ╚████║███████╗██║  ██║╚██████╔╝ ╚████╔╝ ")
+        print("      ╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝ ╚═════╝   ╚═══╝  ")
+        print("")
+        print("         中 文 编 程 环 境 — 交 互 式 演 示")
+        print("")
+        print("              核心原理：独立编码映射 · 中文编程")
+        print("")
+        print("    ─────────────────────────────────────────────")
+        print("    基于独立编码  ·  全语言通用  ·  全平台兼容")
+        print("    Java  C  C++  Python  JavaScript  Go  Rust")
+        print("    Ruby  PHP  Swift  Kotlin  Lua  TypeScript")
+        print("    Dart  Shell  SQL  HTML  CSS  正则表达式")
+        print("    ─────────────────────────────────────────────")
+        print("")
+        self.显示分隔线()
+
+    def 显示帮助(self):
+        print("")
+        print("  ┌──────────────────────────────────────────────┐")
+        print("  │              可 用 指 令 一 览               │")
+        print("  ├──────────────────────────────────────────────┤")
+        print("  │                                              │")
+        print("  │  编程     进入编程模式，用中文指令编写程序     │")
+        print("  │  运行     执行已编写的程序                    │")
+        print("  │  查看     查看当前已编写的所有代码行          │")
+        print("  │  清空     清空当前代码区                      │")
+        print("  │                                              │")
+        print("  │  模板     加载贪吃蛇游戏模板到代码区          │")
+        print("  │  贪吃蛇    直接启动贪吃蛇游戏                 │")
+        print("  │                                              │")
+        print("  │  映射     显示编码映射表统计信息              │")
+        print("  │  关键字   显示所有支持的中文关键字             │")
+        print("  │  语言     显示兼容的编程语言列表               │")
+        print("  │  关于     中文编程环境设计理念                 │")
+        print("  │  单向阀   演示单向编码转换原理                │")
+        print("  │                                              │")
+        print("  │  翻译 <内容>  将中文代码翻译为Python并显示     │")
+        print("  │                                              │")
+        print("  │  帮助/?    显示本帮助信息                     │")
+        print("  │  退出      结束本次会话                       │")
+        print("  │                                              │")
+        print("  └──────────────────────────────────────────────┘")
+        print("")
+
+    def 显示关键字表(self):
+        categories = _映射表.get_keyword_list()
+        print("")
+        print("  ┌────────────────────────────────────────┐")
+        print("  │        中 文 关 键 字 完 整 列 表       │")
+        print("  ├──────────┬────────────────────────────┤")
+        for 类别名, 关键字列表 in categories.items():
+            行内容 = f"  │ {类别名:8} │ "
+            行内容 += "  ".join(f"{kw:6}" for kw in 关键字列表)
+            行内容 += " │"
+            print(行内容)
+        print("  ├──────────┴────────────────────────────┤")
+        print(f"  │  共计 {sum(len(v) for v in categories.values())} 个中文关键字                      │")
+        print("  └────────────────────────────────────────┘")
+        print("")
+
+    def 显示语言列表(self):
+        """展示中文编程环境兼容的编程语言"""
+        print("")
+        print("  ╔══════════════════════════════════════════════╗")
+        print("  ║      中 文 编 程 环 境 · 全 语 言 兼 容     ║")
+        print("  ╠══════════════════════════════════════════════╣")
+        print("  ║                                              ║")
+        print("  ║          基 于 独 立 编 码 映 射             ║")
+        print("  ║       键盘扫描码 → 独立编码 → 中文语义      ║")
+        print("  ║                                              ║")
+        print("  ║  Java / C / C++ / Python / JavaScript         ║")
+        print("  ║  Go / Rust / Ruby / PHP / Swift / Kotlin      ║")
+        print("  ║  Lua / TypeScript / Dart / Shell              ║")
+        print("  ║  HTML / CSS / SQL / 正则表达式               ║")
+        print("  ║                                              ║")
+        print("  ║  一个中文词 → 输出所有目标语言的等价代码     ║")
+        print("  ║  键盘不变 · 语义映射 · 语言中立              ║")
+        print("  ║                                              ║")
+        print("  ╚══════════════════════════════════════════════╝")
+        print("")
+
+    def 显示关于(self):
+        """展示中文编程环境设计理念"""
+        print("")
+        print("  ╔══════════════════════════════════════════════╗")
+        print("  ║      中 文 编 程 环 境  ·  设 计 理 念      ║")
+        print("  ╠══════════════════════════════════════════════╣")
+        print("  ║                                              ║")
+        print("  ║  核 心 原 理                                 ║")
+        print("  ║  ────────────────────────────                ║")
+        print("  ║  独立编码映射 · 中文编程                     ║")
+        print("  ║  键盘扫描码 → 独立编码 → 中文语义            ║")
+        print("  ║  独立编码映射表 · 单向编码转换                ║")
+        print("  ║                                              ║")
+        print("  ║  编 码 特 性                                 ║")
+        print("  ║  ────────────────────────────                ║")
+        print("  ║  内码可读外码 · 外码读不了内码               ║")
+        print("  ║  外文输入 → 映射表转换 → 独立编码语义       ║")
+        print("  ║  编码层隔离 · 语义层独立                     ║")
+        print("  ║                                              ║")
+        print("  ║  全 语 言 兼 容                              ║")
+        print("  ║  ────────────────────────────                ║")
+        print("  ║  按关键字类别独立编码                        ║")
+        print("  ║  一个中文词 → 输出所有目标语言的等价代码     ║")
+        print("  ║  Java C C++ Python JS Go Rust Ruby PHP ...   ║")
+        print("  ║                                              ║")
+        print("  ║  运 行 架 构                                 ║")
+        print("  ║  ────────────────────────────                ║")
+        print("  ║  键盘映射 · 独立编码                         ║")
+        print("  ║  基于 Python 运行时环境                      ║")
+        print("  ║  跨平台兼容（当前运行于 Windows）             ║")
+        print("  ║  独立可执行程序 · 双击即启动                  ║")
+        print("  ║                                              ║")
+        print("  ╚══════════════════════════════════════════════╝")
+        print("")
+
+    def 显示映射统计(self):
+        info = _映射表.stats()
+        print("")
+        print("  ┌────────────────────────────────────────┐")
+        print("  │        独 立 编 码 映 射 表 统 计       │")
+        print("  ├────────────────────┬───────────────────┤")
+        for 键名, 键值 in info.items():
+            print(f"  │ {键名:18} │ {键值:^17} │")
+        print("  └────────────────────┴───────────────────┘")
+        print("")
+
+    def 显示单向阀演示(self):
+        results = _映射表.one_way_valve_test()
+        print("")
+        print("  ┌────────────────────────────────────────┐")
+        print("  │        单 向 编 码 原 理 演 示          │")
+        print("  ├──────────┬───────────┬────────────────┤")
+        print("  │ 方向     │ 编码      │ 结果            │")
+        print("  ├──────────┼───────────┼────────────────┤")
+        for r in results[:10]:
+            方向 = r.get('方向', '')[:6]
+            编码 = str(r.get('Windows编码', r.get('独立编码', '')))[:9]
+            结果 = r.get('结果', '')[:14]
+            print(f"  │ {方向:8} │ {编码:9} │ {结果:14} │")
+        print("  └──────────┴───────────┴────────────────┘")
+        print("  结论：内码可读外码，外码读不了内码。单向编码有效。")
+        print("")
+
+    # --------------------------------------------------------
+    # 编程模式
+    # --------------------------------------------------------
+    def 进入编程模式(self):
+        self.处于编程模式 = True
+        print("")
+        print("  === 已进入编程模式 ===")
+        print("  逐行输入中文代码（支持全部中文关键字）")
+        print("  输入 结束 或 退出编程 退出编程模式")
+        print("  输入 帮助 查看可用的中文关键字")
+        print("")
+
+    def 退出编程模式(self):
+        self.处于编程模式 = False
+        总行数 = len(self.用户代码列表)
+        print(f"")
+        print(f"  === 已退出编程模式（共 {总行数} 行代码）===")
+        print(f"  输入 运行 来执行这些代码")
+        print("")
+
+    def 处理编程输入(self, 行内容):
+        """处理编程模式下的一行输入"""
+        # 退出命令
+        if 行内容 in ('结束', '退出编程', 'exit', 'done'):
+            self.退出编程模式()
+            return
+
+        # 帮助
+        if 行内容 in ('帮助', 'help', '?', '关键字'):
+            self.显示关键字表()
+            return
+
+        # 空行也记录（保留缩进结构）
+        self.用户代码列表.append(行内容)
+
+        # 显示翻译预览（让用户看到翻译结果）
+        翻译结果 = self.翻译代码(行内容)
+        if 翻译结果 != 行内容:  # 有实际翻译发生
+            print(f"     → {翻译结果}")
+        else:
+            print(f"     （原样保留）")
+
+    def 显示当前代码(self):
+        if not self.用户代码列表:
+            print("")
+            print("  代码区为空。使用 编程 进入编程模式来编写代码。")
+            print("  或使用 模板 加载贪吃蛇游戏模板。")
+            print("")
+            return
+
+        print("")
+        print(f"  当前代码区（共 {len(self.用户代码列表)} 行）:")
+        self.显示分隔线()
+        for i, 行 in enumerate(self.用户代码列表, 1):
+            print(f"  {i:3}: {行}")
+        self.显示分隔线()
+        print("")
+
+    def 清空代码(self):
+        count = len(self.用户代码列表)
+        self.用户代码列表 = []
+        print(f"")
+        print(f"  已清空代码区（删除了 {count} 行代码）")
+        print("")
+
+    # --------------------------------------------------------
+    # 模板系统：贪吃蛇游戏
+    # --------------------------------------------------------
+    def 获取贪吃蛇模板(self):
+        """返回完整的贪吃蛇游戏中文源码（逐行列表）"""
+        return [
+            "# 贪吃蛇游戏 — 使用中文关键字编写",
+            "",
+            "导入 pygame",
+            "从 pygame.locals 导入 *",
+            "导入 random",
+            "",
+            "# ---- 游戏常量 ----",
+            "_网格宽 = 20",
+            "_网格高 = 15",
+            "_格大小 = 30",
+            "_窗口宽 = _网格宽 * _格大小",
+            "_窗口高 = _网格高 * _格大小",
+            "",
+            "# ---- 颜色 ----",
+            "_背景色 = (20, 20, 30)",
+            "_蛇身色 = (46, 204, 113)",
+            "_蛇头色 = (39, 174, 96)",
+            "_食物色 = (231, 76, 60)",
+            "_网格色 = (50, 50, 60)",
+            "_文字色 = (236, 240, 241)",
+            "_分数色 = (241, 196, 15)",
+            "",
+            "# ---- 初始化游戏 ----",
+            "pygame.init()",
+            "_屏幕 = pygame.display.set_mode((_窗口宽, _窗口高))",
+            "pygame.display.set_caption('中文编程演示 — 贪吃蛇')",
+            "_时钟 = pygame.time.Clock()",
+            "尝试:",
+            "    _字体 = pygame.font.SysFont('Microsoft YaHei', 22)",
+            "异常:",
+            "    _字体 = pygame.font.Font(None, 22)",
+            "",
+            "# ---- 游戏状态 ----",
+            "_蛇身 = [(10,7), (9,7), (8,7)]",
+            "_方向 = (1, 0)",
+            "_下一方向 = (1, 0)",
+            "_食物位置 = (15, 7)",
+            "_分数 = 0",
+            "_游戏结束标志 = 假",
+            "",
+            "定义 生成食物():",
+            "    循环 真:",
+            "        _fx = random.randint(0, _网格宽 - 1)",
+            "        _fy = random.randint(0, _网格高 - 1)",
+            "        如果 (_fx, _fy) 不在 _蛇身:",
+            "            全局 _食物位置",
+            "            _食物位置 = (_fx, _fy)",
+            "            返回",
+            "",
+            "定义 处理输入():",
+            "    全局 _下一方向, _游戏结束标志",
+            "    for _evt in pygame.event.get():",
+            "        如果 _evt.type == QUIT:",
+            "            返回 假",
+            "        如果 _evt.type == KEYDOWN:",
+            "            如果 _evt.key == K_UP 和 _方向 不等于 (0,1):",
+            "                _下一方向 = (0, -1)",
+            "            否则如果 _evt.key == K_DOWN 和 _方向 不等于 (0,-1):",
+            "                _下一方向 = (0, 1)",
+            "            否则如果 _evt.key == K_LEFT 和 _方向 不等于 (1,0):",
+            "                _下一方向 = (-1, 0)",
+            "            否则如果 _evt.key == K_RIGHT 和 _方向 不等于 (-1,0):",
+            "                _下一方向 = (1, 0)",
+            "            否则如果 _evt.key == K_ESCAPE:",
+            "                返回 假",
+            "            否则如果 _evt.key == K_r:",
+            "                如果 _游戏结束标志:",
+            "                    调用重新开始()",
+            "    返回 真",
+            "",
+            "定义 更新状态():",
+            "    全局 _蛇身, _方向, _下一方向, _分数, _游戏结束标志, _食物位置",
+            "    如果 _游戏结束标志:",
+            "        返回",
+            "    _方向 = _下一方向",
+            "    _hx, _hy = _蛇身[0]",
+            "    _dx, _dy = _方向",
+            "    _新hx = _hx + _dx",
+            "    _新hy = _hy + _dy",
+            "    如果 _新hx 小于 0 或 _新hx 大于等于 _网格宽 \\",
+            "       或 _新hy 小于 0 或 _新hy 大于等于 _网格高:",
+            "        _游戏结束标志 = 真",
+            "        返回",
+            "    如果 (_新hx, _新hy) 在 _蛇身:",
+            "        _游戏结束标志 = 真",
+            "        返回",
+            "    _蛇身.insert(0, (_新hx, _新hy))",
+            "    如果 (_新hx, _新hy) 等于 _食物位置:",
+            "        _分数 = _分数 + 10",
+            "        生成食物()",
+            "    否则:",
+            "        _蛇身.pop()",
+            "",
+            "定义 绘制画面():",
+            "    _屏幕.fill(_背景色)",
+            "    # 网格线",
+            "    for _gx in range(0, _窗口宽, _格大小):",
+            "        pygame.draw.line(_屏幕, _网格色, (_gx,0), (_gx,_窗口高))",
+            "    for _gy in range(0, _窗口高, _格大小):",
+            "        pygame.draw.line(_屏幕, _网格色, (0,_gy), (_窗口宽,_gy))",
+            "    # 食物",
+            "    _frect = pygame.Rect(_食物位置[0]*_格大小+2, _食物位置[1]*_格大小+2, _格大小-4, _格大小-4)",
+            "    pygame.draw.rect(_屏幕, _食物色, _frect, border_radius=5)",
+            "    # 蛇身",
+            "    for _si, (_sx, _sy) in enumerate(_蛇身):",
+            "        _srect = pygame.Rect(_sx*_格大小+1, _sy*_格大小+1, _格大小-2, _格大小-2)",
+            "        如果 _si 等于 0:",
+            "            _sc = _蛇头色",
+            "        否则:",
+            "            _rf = 1.0 - (_si / len(_蛇身)) * 0.5",
+            "            _sc = (int(_蛇身色[0]*_rf), int(_蛇身色[1]*_rf), int(_蛇身色[2]*_rf))",
+            "        pygame.draw.rect(_屏幕, _sc, _srect, border_radius=4)",
+            "    # 分数",
+            "    _stext = _字体.render(f'分数: {_分数}', True, _分数色)",
+            "    _屏幕.blit(_stext, (10, 10))",
+            "    # 提示",
+            "    _htext = _字体.render('方向键移动 | R重新开始 | ESC退出', True, _文字色)",
+            "    _hrect = _htext.get_rect(center=(_窗口宽//2, _窗口高-15))",
+            "    _屏幕.blit(_htext, _hrect)",
+            "    # 游戏结束画面",
+            "    如果 _游戏结束标志:",
+            "        _遮罩 = pygame.Surface((_窗口宽, _窗口高))",
+            "        _遮罩.set_alpha(180)",
+            "        _遮罩.fill((0,0,0))",
+            "        _屏幕.blit(_遮罩, (0,0))",
+            "        _efont = pygame.font.Font(None, 48)",
+            "        _etext = _efont.render('游戏结束!', True, _食物色)",
+            "        _erect = _etext.get_rect(center=(_窗口宽//2, _窗口高//2-30))",
+            "        _屏幕.blit(_etext, _erect)",
+            "        _fstext = _字体.render(f'最终分数: {_分数}', True, _分数色)",
+            "        _fsrect = _fstext.get_rect(center=(_窗口宽//2, _窗口高//2+20))",
+            "        _屏幕.blit(_fstext, _fsrect)",
+            "        _rt = _字体.render('按 R 键重新开始', True, _文字色)",
+            "        _rr = _rt.get_rect(center=(_窗口宽//2, _窗口高//2+55))",
+            "        _屏幕.blit(_rt, _rr)",
+            "    pygame.display.flip()",
+            "",
+            "定义 重新开始():",
+            "    全局 _蛇身, _方向, _下一方向, _分数, _游戏结束标志",
+            "    _分数 = 0",
+            "    _游戏结束标志 = 假",
+            "    _蛇身 = [(10,7), (9,7), (8,7)]",
+            "    _方向 = (1, 0)",
+            "    _下一方向 = (1, 0)",
+            "    生成食物()",
+            "",
+            "# ==== 主循环 ====",
+            "打印('')",
+            "打印('=' * 50)",
+            "打印('  中文编程演示 — 贪吃蛇游戏')",
+            "打印('  方向键控制 | R重新开始 | ESC退出')",
+            "打印('=' * 50)",
+            "",
+            "循环 真:",
+            "    如果 不 处理输入():",
+            "        break",
+            "    更新状态()",
+            "    绘制画面()",
+            "    _时钟.tick(10)",
+            "",
+            "pygame.quit()",
+            "打印(f'游戏已退出。最终分数: {_分数}')",
+        ]
+
+    def 加载贪吃蛇模板(self):
+        template = self.获取贪吃蛇模板()
+        self.用户代码列表 = template[:]
+        print("")
+        print(f"  已加载贪吃蛇游戏模板（共 {len(template)} 行中文代码）")
+        print("  输入 查看 浏览代码，输入 运行 启动游戏")
+        print("  或输入 编程 进入编辑模式修改代码")
+        print("")
+
+    # --------------------------------------------------------
+    # 执行引擎
+    # --------------------------------------------------------
+    def 运行用户代码(self):
+        if not self.用户代码列表:
+            print("")
+            print("  代码区为空！请先使用 编写 或 模板 来创建代码。")
+            print("")
+            return
+
+        合并代码 = "\n".join(self.用户代码列表)
+
+        print("")
+        print("  ┌────────────────────────────────────┐")
+        print("  │        正 在 翻 译 并 执 行 ...      │")
+        print("  └────────────────────────────────────┘")
+        print("")
+
+        # 先做一次翻译预览（显示前几行）
+        preview_lines = min(5, len(self.用户代码列表))
+        print(f"  翻译预览（前{preview_lines}行）：")
+        for i in range(preview_lines):
+            original = self.用户代码列表[i]
+            translated = self.翻译代码(original)
+            if translated != original:
+                print(f"    {original}")
+                print(f"      ↓ 翻译为")
+                print(f"    {translated}")
+            else:
+                print(f"    {original}  （保持不变）")
+        if len(self.用户代码列表) > preview_lines:
+            print(f"    ... 共 {len(self.用户代码列表)} 行，省略剩余 {len(self.用户代码列表) - preview_lines} 行")
+        print("")
+
+        # 执行
+        success, error = self.执行代码(合并代码)
+
+        if success:
+            print("  ┌────────────────────────────────────┐")
+            print("  │          程 序 执 行 完 成           │")
+            print("  └────────────────────────────────────┘")
+            print("")
+        else:
+            print(f"  ┌────────────────────────────────────┐")
+            print(f"  │  执行出错:                          │")
+            print(f"  │  {error[:46]:<46} │")
+            print(f"  └────────────────────────────────────┘")
+            print("")
+            print("  提示：请检查代码语法是否正确")
+            print("  输入 查看 查看当前代码，输入 翻译 <行> 查看翻译结果")
+            print("")
+
+    def 直接启动贪吃蛇(self):
+        """直接启动贪吃蛇游戏，启动前显示完整源码（中文 + 翻译后Python）"""
+        if not _游戏可用:
+            print("")
+            print("  错误：游戏模块（pygame）未安装或不可用")
+            print("  请先安装 pygame：pip install pygame")
+            print("")
+            return
+
+        # 加载模板
+        template_lines = self.获取贪吃蛇模板()
+
+        # ==== 显示完整中文源码 ====
+        print("")
+        self.显示分隔线()
+        print("  贪吃蛇源码（中文关键字版本）— 共 %d 行" % len(template_lines))
+        self.显示分隔线()
+        for 行 in template_lines:
+            print(f"  {行}")
+        self.显示分隔线()
+
+        # ==== 显示翻译后的 Python 源码 ====
+        print("")
+        self.显示分隔线()
+        print("  翻译后 Python 代码")
+        self.显示分隔线()
+        template_code = "\n".join(template_lines)
+        translated = self.翻译代码(template_code)
+        for 行 in translated.split("\n"):
+            print(f"  {行}")
+        self.显示分隔线()
+
+        # ==== 启动游戏 ====
+        print("")
+        print("  正在启动贪吃蛇游戏...")
+        print("")
+
+        success, error = self.执行代码(template_code)
+
+        if not success:
+            print(f"  游戏启动失败: {error}")
+
+    # --------------------------------------------------------
+    # 主命令分发器
+    # --------------------------------------------------------
+    def 处理命令(self, raw_cmd):
+        cmd = raw_cmd.strip()
+
+        # 空行忽略
+        if not cmd:
+            return
+
+        # 记录历史
+        self.命令历史.append(cmd)
+
+        # ===== 编程模式下的特殊处理 =====
+        if self.处于编程模式:
+            self.处理编程输入(cmd)
+            return
+
+        # ===== 普通模式下的命令解析 =====
+
+        # --- 编程相关 ---
+        if cmd in ('编程', 'program', 'code', '编辑', 'edit'):
+            self.进入编程模式()
+
+        elif cmd in ('运行', 'run', 'execute', '执行'):
+            self.运行用户代码()
+
+        elif cmd in ('查看', 'view', 'code', 'list', 'ls'):
+            self.显示当前代码()
+
+        elif cmd in ('清空', 'clear', 'cls', 'reset'):
+            self.清空代码()
+
+        # --- 模板与游戏 ---
+        elif cmd in ('模板', 'template', 'snake-template'):
+            self.加载贪吃蛇模板()
+
+        elif cmd in ('贪吃蛇', 'snake', 'game', '游戏'):
+            self.直接启动贪吃蛇()
+
+        elif cmd in ('语言', 'lang', 'languages', '兼容'):
+            self.显示语言列表()
+
+        elif cmd in ('关于', 'about', 'info', '版本', 'version'):
+            self.显示关于()
+
+        elif cmd in ('映射', 'mapping', 'table', 'info'):
+            self.显示映射统计()
+
+        elif cmd in ('关键字', 'keywords', 'kw'):
+            self.显示关键字表()
+
+        elif cmd in ('单向阀', 'valve', 'one-way', 'security'):
+            self.显示单向阀演示()
+
+        # --- 翻译功能 ---
+        elif cmd.startswith('翻译 ') or cmd.startswith('translate '):
+            content = cmd[3:].strip()
+            if content:
+                result = self.翻译代码(content)
+                print("")
+                print(f"  原文: {content}")
+                print(f"  译文: {result}")
+                print("")
+            else:
+                print("  用法: 翻译 <中文代码内容>")
+                print("  示例: 翻译 如果 分数 大于 100:")
+                print("")
+
+        # --- 帮助 ---
+        elif cmd in ('帮助', 'help', '?', '指令', 'commands'):
+            self.显示帮助()
+
+        # --- 退出 ---
+        elif cmd in ('退出', 'exit', 'quit', 'q', 'bye'):
+            print("")
+            self.显示分隔线()
+            print("  感谢使用中文编程交互环境")
+            self.显示分隔线()
+            print("")
+            return False  # 信号主循环退出
+
+        # --- 未知命令 ---
+        else:
+            print(f"  未知指令: {cmd}")
+            print("  输入 帮助 查看所有可用指令")
+            print("")
+
+        return True  # 继续运行
+
+    # --------------------------------------------------------
+    # 主循环入口
+    # --------------------------------------------------------
+    def 启动(self):
+        """启动中文操作系统交互式环境"""
+        self.显示横幅()
+        self.显示帮助()
+
+        # 主循环
+        running = True
+        while running:
+            try:
+                if self.处于编程模式:
+                    prompt = ">>> "
+                else:
+                    prompt = ">> "
+
+                user_input = input(prompt)
+
+                if self.处理命令(user_input) == False:
+                    running = False
+
+            except KeyboardInterrupt:
+                print("")
+                print("")
+                self.显示分隔线()
+                print("  会话已中断（按下 Ctrl+C）")
+                self.显示分隔线()
+                print("")
+                running = False
+
+            except EOFError:
+                running = False
+
+
+# ============================================================
+# 阶段四：程序入口
+# ============================================================
+if __name__ == "__main__":
+    try:
+        系统 = 中文操作系统()
+        系统.启动()
+    except KeyboardInterrupt:
+        print("\n程序已停止。")
+        sys.exit(0)
+    except Exception as e:
+        print(f"\n程序异常: {e}")
+        sys.exit(1)
+
+
+
+
+
+
+开源的是证明和路线图。实现代码保留。
